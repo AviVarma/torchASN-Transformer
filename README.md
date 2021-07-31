@@ -1,27 +1,65 @@
 # torchASN
 A pytorch implementation of ["Abstract Syntax Networks for Code Generation and Semantic Parsing"](https://arxiv.org/pdf/1704.07535.pdf).
 
- 
+
  ## Prerequisites
- 
+
  * pytorch >= 1.4.0
- 
+
  ## Run on Demo Dataset
- 
+
  Instructions of running  `torchASN` on [DeepRegex](https://arxiv.org/pdf/1608.03000.pdf), an NL-to-Regex dataset, are included. This implementation achieves 61.6% DFA-accuracy on *DeepRegex*. For comparison, the performance of a seq-to-seq model with attention is 58.2%.
- 
-To run the code,
+
+## To run the code:
+
+### Linux
 
 ```
 # Preprocess dataset
 python dataset/turk/make_dataset.py
 
 # Train a model. A pretrained model is included at checkpoints/turk/pretrained.bin.
-./scripts/turk/train.sh
+bash ./scripts/turk/train.sh
 
 # Test a model. <model_file> is the pointer to the model, e.g., the pretrained one mentioned above.
-./scripts/turk/test.sh <model_file>
+bash ./scripts/turk/test.sh <model_file>
 ```
+
+### Windows
+
+Prerequisites:
+Java JDK 8.0 and above (Within Linux this comes pre-installed.)
+Install Git for windows and open the git bash terminal:
+
+
++ Preprocess dataset
+```
+python dataset/turk/make_dataset.py
+```
+
++ Go to line `33 - 35` in `test.py` which should look like:
+
+```
+out = subprocess.check_output(
+        ['java', '-cp', './external/datagen.jar:./external/lib/*', '-ea', 'datagen.Main', 'equiv',
+            spec0, spec1], stderr=subprocess.DEVNULL)
+```
+
+Replace them with:
+
+```
+out = subprocess.check_output(
+        ['java', '-cp', './external/datagen.jar;./external/lib/*', '-ea', 'datagen.Main', 'equiv',
+            spec0, spec1], stderr=subprocess.DEVNULL)
+```
+
++ Train a model. A pretrained model is included at `checkpoints/turk/pretrained.bin`.
+```
+bash ./scripts/turk/train.sh
+```
+
++ Test a model. `<model_file>` is the pointer to the model, e.g., the pretrained one mentioned above.
+`bash ./scripts/turk/test.sh <model_file>`
 
 ## Addapting to New Programming Language
 
