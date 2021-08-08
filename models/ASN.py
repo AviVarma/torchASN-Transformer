@@ -34,7 +34,7 @@ class ConstructorTypeModule(nn.Module):
         self.field_embeddings = nn.Embedding(len(production.constructor.fields), args.field_emb_size)
         self.w = nn.Linear(2 * args.enc_hid_size + args.field_emb_size, args.enc_hid_size)
         self.dropout = nn.Dropout(args.dropout)
-    
+
     def update(self, v_lstm, v_state, contexts):
         # v_state, h_n, c_n where 1 * b * h
         # input: seq_len, batch, input_size
@@ -102,7 +102,16 @@ class ASNParser(nn.Module):
         self.prim_type_dict = nn.ModuleDict(prim_type_modules)
 
         self.v_lstm = nn.LSTM(args.enc_hid_size, args.enc_hid_size)
-        self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size)
+        self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size) # HERE
+
+        
+        # Scaled dot product attention components:
+        self.att_src_linear = nn.Linear(args.hidden_size, args.hidden_size, bias=False)
+
+        # transformation of decoder hidden states and context vectors before reading out target words
+        # this produces the `attentional vector` in (Luong et al., 2015)
+        self.att_vec_linear = nn.Linear(args.hidden_size + args.hidden_size, args.att_vec_size, bias=False)
+
         self.dropout = nn.Dropout(args.dropout)
 
     def score(self, examples):
@@ -111,6 +120,7 @@ class ASNParser(nn.Module):
         # print(scores)
         return torch.stack(scores)
     
+
 
     def _score(self, ex):
         batch = Batch([ex], self.grammar, self.vocab)
@@ -125,13 +135,13 @@ class ASNParser(nn.Module):
         sent_embedding =  self.src_embedding(batch.sents)
         context_vecs, final_state = self.encoder(sent_embedding, sent_lens)
 
-        # L * b * hidden,  
+        # L * b * hidden,
         # print(context_vecs.size(), final_state[0].size(), final_state[1].size())
         return context_vecs, final_state
 
     def _score_node(self, node_type, v_state, action_node, context_vecs, context_masks):
         v_output = self.dropout(v_state[0])
-        contexts = self.attn(v_output.unsqueeze(0), context_vecs).squeeze(0)
+        contexts = self.attn(v_output.unsqueeze(0), context_vecs).squeeze(0) #HERE
 
         if node_type.is_primitive_type():
             module = self.prim_type_dict[node_type.name]
@@ -143,7 +153,7 @@ class ASNParser(nn.Module):
             # print("Primitive", score)
             return score
 
-        
+
         cnstr = action_node.action.choice.constructor
         comp_module = self.comp_type_dict[node_type.name]
         scores = comp_module.score(v_output, contexts)
@@ -160,7 +170,7 @@ class ASNParser(nn.Module):
         return score
 
     def naive_parse(self, ex):
-        batch = Batch([ex], self.grammar, self.vocab, train=False)        
+        batch = Batch([ex], self.grammar, self.vocab, train=False)
         context_vecs, encoder_outputs = self.encode(batch)
         init_state = encoder_outputs
 
@@ -177,7 +187,7 @@ class ASNParser(nn.Module):
 
         # else token needed
         # tgt_token = tgt
-        contexts = self.attn(v_state[0].unsqueeze(0), context_vecs).squeeze(0)
+        contexts = self.attn(v_state[0].unsqueeze(0), context_vecs).squeeze(0) #HERE
         if depth > 9:
             return ActionTree(None)
 
@@ -191,7 +201,7 @@ class ASNParser(nn.Module):
             choice_idx = np.argmax(scores)
             return ActionTree(GenTokenAction(node_type, module.vocab.get_word(choice_idx)))
 
-        
+
         comp_module = self.comp_type_dict[node_type.name]
         scores = comp_module.score(v_state[0], contexts).cpu().numpy().flatten()
         choice_idx = np.argmax(scores)
@@ -210,24 +220,24 @@ class ASNParser(nn.Module):
         return ActionTree(action, action_fields)
 
     def parse(self, ex):
-        batch = Batch([ex], self.grammar, self.vocab, train=False)        
+        batch = Batch([ex], self.grammar, self.vocab, train=False)
         context_vecs, encoder_outputs = self.encode(batch)
         init_state = encoder_outputs
 
         # action_tree = self._naive_parse(self.grammar.root_type, init_state, context_vecs, batch.sent_masks, 1)
-        
+
         completed_hyps = []
         cur_beam = [Hypothesis.init_hypothesis(self.grammar.root_type, init_state)]
-        
+
         for ts in range(self.args.max_decode_step):
             hyp_pools = []
             for hyp in cur_beam:
                 continuations = self.continuations_of_hyp(hyp, context_vecs, batch.sent_masks)
                 hyp_pools.extend(continuations)
-            
+
             hyp_pools.sort(key=lambda x: x.score, reverse=True)
             # next_beam = next_beam[:self.args.beam_size]
-            
+
             num_slots = self.args.beam_size - len(completed_hyps)
 
             cur_beam = []
@@ -236,10 +246,10 @@ class ASNParser(nn.Module):
                     completed_hyps.append(hyp)
                 else:
                     cur_beam.append(hyp)
-            
+
             if not cur_beam:
                 break
-        
+
         completed_hyps.sort(key=lambda x: x.score, reverse=True)
         return completed_hyps
 
@@ -252,10 +262,10 @@ class ASNParser(nn.Module):
 
         # else token needed
         # tgt_token = tgt
-        
+
         pending_node, v_state = hyp.get_pending_node()
-        
-        contexts = self.attn(v_state[0].unsqueeze(0), context_vecs).squeeze(0)
+
+        contexts = self.attn(v_state[0].unsqueeze(0), context_vecs).squeeze(0) #HERE
 
         node_type = pending_node.action.type
 
@@ -315,7 +325,7 @@ class ASNParser(nn.Module):
             update_args(saved_args, ex_args)
         parser = cls(saved_args, transition_system, vocab)
         parser.load_state_dict(saved_state)
-        
+
         # setattr(saved_args, )
         if cuda: parser = parser.cuda()
         parser.eval()
@@ -399,8 +409,40 @@ class RNNEncoder(nn.Module):
         # print(max_length, output.size(), h_t[0].size(), h_t[1].size())
 
         output = self.dropout(output)
-        return (output, h_t)
+        return (output, h_t) # we are returning a tuple here.
 
+
+class ScaledDotProdAttention(nn.Module):
+
+    def __init__(self, hidden_size, context_size=None):
+        super(ScaledDotProdAttention, self).__init__()
+        self.hidden_size = hidden_size
+        self.context_size = hidden_size if context_size is None else context_size
+        self.attn = torch.nn.Linear(self.context_size, self.hidden_size)
+        self.init_weight()
+
+    def init_weight(self):
+        nn.init.xavier_uniform_(self.attn.weight, gain=1)
+        nn.init.constant_(self.attn.bias, 0)
+
+    def forward(h_t, src_encoding, src_encoding_att_linear, mask=None):
+        """
+        :param h_t: (batch_size, hidden_size)
+        :param src_encoding: (batch_size, src_sent_len, hidden_size * 2)
+        :param src_encoding_att_linear: (batch_size, src_sent_len, hidden_size)
+        :param mask: (batch_size, src_sent_len)
+        """
+        # (batch_size, src_sent_len)
+        att_weight = torch.bmm(src_encoding_att_linear, h_t.unsqueeze(2)).squeeze(2)
+        if mask is not None:
+            att_weight.data.masked_fill_(mask.bool(), -float('inf'))
+        att_weight = F.softmax(att_weight, dim=-1)
+
+        att_view = (att_weight.size(0), 1, att_weight.size(1))
+        # (batch_size, hidden_size)
+        ctx_vec = torch.bmm(att_weight.view(*att_view), src_encoding).squeeze(1)
+
+        return ctx_vec, att_weight
 
 class LuongAttention(nn.Module):
 
