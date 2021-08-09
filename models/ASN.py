@@ -103,6 +103,15 @@ class ASNParser(nn.Module):
         self.prim_type_dict = nn.ModuleDict(prim_type_modules)
 
         self.v_lstm = nn.LSTM(args.enc_hid_size, args.enc_hid_size)
+
+        # Attention:
+        self.att_src_linear = nn.Linear(args.enc_hid_size, args.enc_hid_size, bias=False)
+
+        # (batch_size, query_len, hidden_size)
+        self.src_encodings_att_linear = self.att_src_linear(src_encodings)
+
+        #self.attn = nn_utils.dot_prod_attention(h_t, src_encoding, src_encoding_att_linear, mask=None)
+        
         self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size) # HERE
         self.dropout = nn.Dropout(args.dropout)
 
