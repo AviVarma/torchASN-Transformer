@@ -110,9 +110,10 @@ class ASNParser(nn.Module):
         # (batch_size, query_len, hidden_size)
         self.src_encodings_att_linear = self.att_src_linear(src_encodings)
 
-        #self.attn = nn_utils.dot_prod_attention(h_t, src_encoding, src_encoding_att_linear, mask=None)
-        
-        self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size) # HERE
+        # params: h_t, src_encoding is the encoder hidden status (2* because bi-directional), vectors for computing attention scores
+        self.attn = nn_utils.dot_prod_attention(self.encoder[1], 2 * args.enc_hid_size, self.src_encodings_att_linear, mask=None)
+
+        #self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size) #HERE
         self.dropout = nn.Dropout(args.dropout)
 
     def score(self, examples):
