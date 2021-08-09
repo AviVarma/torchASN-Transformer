@@ -8,6 +8,7 @@ from grammar.hypothesis import Hypothesis
 import numpy as np
 import os
 from common.config import update_args
+import nn_utils
 
 class CompositeTypeModule(nn.Module):
     def __init__(self, args, type, productions):
@@ -103,15 +104,6 @@ class ASNParser(nn.Module):
 
         self.v_lstm = nn.LSTM(args.enc_hid_size, args.enc_hid_size)
         self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size) # HERE
-
-        
-        # Scaled dot product attention components:
-        self.att_src_linear = nn.Linear(args.hidden_size, args.hidden_size, bias=False)
-
-        # transformation of decoder hidden states and context vectors before reading out target words
-        # this produces the `attentional vector` in (Luong et al., 2015)
-        self.att_vec_linear = nn.Linear(args.hidden_size + args.hidden_size, args.att_vec_size, bias=False)
-
         self.dropout = nn.Dropout(args.dropout)
 
     def score(self, examples):
@@ -119,7 +111,7 @@ class ASNParser(nn.Module):
         scores = [self._score(ex) for ex in examples]
         # print(scores)
         return torch.stack(scores)
-    
+
 
 
     def _score(self, ex):
@@ -411,38 +403,6 @@ class RNNEncoder(nn.Module):
         output = self.dropout(output)
         return (output, h_t) # we are returning a tuple here.
 
-
-class ScaledDotProdAttention(nn.Module):
-
-    def __init__(self, hidden_size, context_size=None):
-        super(ScaledDotProdAttention, self).__init__()
-        self.hidden_size = hidden_size
-        self.context_size = hidden_size if context_size is None else context_size
-        self.attn = torch.nn.Linear(self.context_size, self.hidden_size)
-        self.init_weight()
-
-    def init_weight(self):
-        nn.init.xavier_uniform_(self.attn.weight, gain=1)
-        nn.init.constant_(self.attn.bias, 0)
-
-    def forward(h_t, src_encoding, src_encoding_att_linear, mask=None):
-        """
-        :param h_t: (batch_size, hidden_size)
-        :param src_encoding: (batch_size, src_sent_len, hidden_size * 2)
-        :param src_encoding_att_linear: (batch_size, src_sent_len, hidden_size)
-        :param mask: (batch_size, src_sent_len)
-        """
-        # (batch_size, src_sent_len)
-        att_weight = torch.bmm(src_encoding_att_linear, h_t.unsqueeze(2)).squeeze(2)
-        if mask is not None:
-            att_weight.data.masked_fill_(mask.bool(), -float('inf'))
-        att_weight = F.softmax(att_weight, dim=-1)
-
-        att_view = (att_weight.size(0), 1, att_weight.size(1))
-        # (batch_size, hidden_size)
-        ctx_vec = torch.bmm(att_weight.view(*att_view), src_encoding).squeeze(1)
-
-        return ctx_vec, att_weight
 
 class LuongAttention(nn.Module):
 
