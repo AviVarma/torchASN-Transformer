@@ -413,6 +413,46 @@ class RNNEncoder(nn.Module):
         output = self.dropout(output)
         return (output, h_t) # we are returning a tuple here.
 
+def ScaledDotProdAttention(q, k, v, d_k, mask=None, dropout=None):
+
+    scores = torch.matmul(q, k.transpose(-2, -1)) /  math.sqrt(d_k)
+
+    if mask is not None:
+        mask = mask.unsqueeze(1)
+        scores = scores.masked_fill(mask == 0, -1e9)
+
+    scores = F.softmax(scores, dim=-1)
+
+    if dropout is not None:
+        scores = dropout(scores)
+
+    output = torch.matmul(scores, v)
+    return output
+
+# class ScaledDotProductAttention(nn.Module):
+#
+#     def __init__(self, query, key, value, mask=None):
+#         """
+#         Implements the equation:
+#         Attention(Q,K,V) = softmax(QK^T/(sqrt{d_k}))V
+#
+#         param query: (batch size, nheads, sequence length, d_k)
+#         param key: (batch size, nheads, sequence length, d_k)
+#         param value: (batch size, nheads, sequence length, d_v)
+#         param mask: if True, mask padding based on src_lengths and sttend to previous sequence postions
+#
+#         returns attn: (batch size, sequence length, d_v)
+#         """
+#         self.query = query
+#         self.key = key
+#         self.value = value
+#
+#     def forward(self, query, key, value, mask=False, src_lengths_mask=None):
+#         self.d_k = query.shape[-1]
+#         self.scores = torch.matmul(query, key.transpose(2, 3)) / math.sqrt(d_k)
+#         p_attn = F.softmax(scores, dim=-1)
+#         return torch.matmul(p_attn, value), p_atten
+
 
 class LuongAttention(nn.Module):
 
