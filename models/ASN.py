@@ -8,7 +8,7 @@ from grammar.hypothesis import Hypothesis
 import numpy as np
 import os
 from common.config import update_args
-import nn_utils
+import nn_utils # Not used in original implementation.
 
 # STEP 1: Replace the encoder with the transforemer encoder or make the LSTM encoder return a few more values for the Self attention.
 
@@ -108,9 +108,7 @@ class ASNParser(nn.Module):
 
         # Attention:
         self.att_src_linear = nn.Linear(args.enc_hid_size, args.enc_hid_size, bias=False)
-
-        # (batch_size, query_len, hidden_size)
-        self.src_encodings_att_linear = self.att_src_linear(src_encodings)
+        self.att_vec_linear = nn.Linear(args.hidden_size + args.hidden_size, args.att_vec_size, bias=False)
 
         # params: h_t, src_encoding is the encoder hidden status (2* because bi-directional), vectors for computing attention scores
         self.attn = nn_utils.dot_prod_attention(self.encoder[1], 2 * args.enc_hid_size, self.src_encodings_att_linear, mask=None)
@@ -145,7 +143,11 @@ class ASNParser(nn.Module):
 
     def _score_node(self, node_type, v_state, action_node, context_vecs, context_masks):
         v_output = self.dropout(v_state[0])
-        contexts = self.attn(v_output.unsqueeze(0), context_vecs).squeeze(0) #HERE
+
+        contexts, alpha = nn_utils.dot_prod_attention(v_output.unsqueeze(0), context_vecs, )
+        att_t = torch.tanh(self.att_vec_linear(torch.cat([h_t, ctx_t], 1)))
+        att_t = self.dropout(att_t) # This might not work actually.                     HERE YOU WILL FIND THE ATTEMPETD IMPLEMENTATION OF DOT-PRODUCT ATTENTION....
+        #contexts = self.attn(v_output.unsqueeze(0), context_vecs).squeeze(0) #HERE context_vecs is needed for dot product
 
         if node_type.is_primitive_type():
             module = self.prim_type_dict[node_type.name]
@@ -335,6 +337,10 @@ class ASNParser(nn.Module):
         parser.eval()
 
         return parser
+
+# The embeddings is concatenated with an attention-based context vector
+# c and fed through a feedforward neural network f_c to obtain a
+# context-dependent field embedding for the constructor modules.
 
 class EmbeddingLayer(nn.Module):
     def __init__(self, embedding_dim, full_dict_size, embedding_dropout_rate):
