@@ -113,7 +113,8 @@ class ASNParser(nn.Module):
         # params: h_t, src_encoding is the encoder hidden status (2* because bi-directional), vectors for computing attention scores
         #self.attn = nn_utils.dot_prod_attention(self.encoder[1], 2 * args.enc_hid_size, self.src_encodings_att_linear, mask=None)
 
-        self.attn = LuongDotProdAttention(args.enc_hid_size, 2 * args.enc_hid_size) #HERE
+        #self.attn = LuongDotProdAttention(args.enc_hid_size, 2 * args.enc_hid_size) #HERE
+        self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size)
         self.dropout = nn.Dropout(args.dropout)
 
     def score(self, examples):
