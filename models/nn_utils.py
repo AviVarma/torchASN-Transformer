@@ -32,11 +32,6 @@ def dot_prod_attention(h_t, src_encoding, src_encoding_att_linear, mask=None):
 
     return ctx_vec, att_weight
 
-
-def multi_head_attention():
-    
-
-
 def length_array_to_mask_tensor(length_array, cuda=False, valid_entry_has_mask_one=False):
     max_len = max(length_array)
     batch_size = len(length_array)
