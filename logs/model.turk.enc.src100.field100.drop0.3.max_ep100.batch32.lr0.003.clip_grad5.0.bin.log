@@ -1,0 +1,51 @@
+Traceback (most recent call last):
+  File "train.py", line 7, in <module>
+    from models.ASN import ASNParser
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 11, in <module>
+    import nn_utils # Not used in original implementation.
+ModuleNotFoundError: No module named 'nn_utils'
+Traceback (most recent call last):
+  File "train.py", line 8, in <module>
+    from models import nn_utils
+  File "/home/avi/Documents/torchASN-Transformer/models/nn_utils.py", line 40
+    def length_array_to_mask_tensor(length_array, cuda=False, valid_entry_has_mask_one=False):
+    ^
+IndentationError: expected an indented block
+Namespace(asdl_file='data/turk/turk_asdl.txt', batch_size=32, clip_grad=5.0, dev_file='data/turk/dev.bin', dropout=0.3, enc_hid_size=100, field_emb_size=100, log_every=50, lr=0.003, max_decode_step=70, max_epoch=100, run_val_after=5, save_to='checkpoints/turk/model.turk.enc.src100.field100.drop0.3.max_ep100.batch32.lr0.003.clip_grad5.0.bin', src_emb_size=100, train_file='data/turk/train.bin', vocab='data/turk/vocab.bin')
+Traceback (most recent call last):
+  File "train.py", line 76, in <module>
+    train(args)
+  File "train.py", line 43, in train
+    loss = parser.score(batch_example)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 121, in score
+    scores = [self._score(ex) for ex in examples]
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 121, in <listcomp>
+    scores = [self._score(ex) for ex in examples]
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 129, in _score
+    context_vecs, encoder_outputs = self.encode(batch)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 138, in encode
+    context_vecs, final_state = self.encoder(sent_embedding, sent_lens)
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1051, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 419, in forward
+    print(max_length, output.size(), h_t[0].size(), h_t[1].size())
+NameError: name 'max_length' is not defined
+Namespace(asdl_file='data/turk/turk_asdl.txt', batch_size=32, clip_grad=5.0, dev_file='data/turk/dev.bin', dropout=0.3, enc_hid_size=100, field_emb_size=100, log_every=50, lr=0.003, max_decode_step=70, max_epoch=100, run_val_after=5, save_to='checkpoints/turk/model.turk.enc.src100.field100.drop0.3.max_ep100.batch32.lr0.003.clip_grad5.0.bin', src_emb_size=100, train_file='data/turk/train.bin', vocab='data/turk/vocab.bin')
+Traceback (most recent call last):
+  File "train.py", line 76, in <module>
+    train(args)
+  File "train.py", line 43, in train
+    loss = parser.score(batch_example)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 121, in score
+    scores = [self._score(ex) for ex in examples]
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 121, in <listcomp>
+    scores = [self._score(ex) for ex in examples]
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 129, in _score
+    context_vecs, encoder_outputs = self.encode(batch)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 138, in encode
+    context_vecs, final_state = self.encoder(sent_embedding, sent_lens)
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1051, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 419, in forward
+    print(max_length, output.size(), h_t[0].size(), h_t[1].size())
+NameError: name 'max_length' is not defined

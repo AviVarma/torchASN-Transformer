@@ -1,0 +1,43 @@
+Traceback (most recent call last):
+  File "test.py", line 11, in <module>
+    from models.ASN import ASNParser
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 11, in <module>
+    import nn_utils # Not used in original implementation.
+ModuleNotFoundError: No module named 'nn_utils'
+Traceback (most recent call last):
+  File "test.py", line 12, in <module>
+    from models import nn_utils
+  File "/home/avi/Documents/torchASN-Transformer/models/nn_utils.py", line 40
+    def length_array_to_mask_tensor(length_array, cuda=False, valid_entry_has_mask_one=False):
+    ^
+IndentationError: expected an indented block
+Namespace(beam_size=10, max_decode_step=70, model_file='checkpoints/turk/model.turk.enc.src100.field100.drop0.3.max_ep100.batch32.lr0.003.clip_grad5.0.bin', test_file='data/turk/test.bin')
+Traceback (most recent call last):
+  File "test.py", line 85, in <module>
+    test(args)
+  File "test.py", line 45, in test
+    parser = ASNParser.load(args.model_file, ex_args=args)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 323, in load
+    params = torch.load(model_path)
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/serialization.py", line 594, in load
+    with _open_file_like(f, 'rb') as opened_file:
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/serialization.py", line 230, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/serialization.py", line 211, in __init__
+    super(_open_file, self).__init__(open(name, mode))
+FileNotFoundError: [Errno 2] No such file or directory: 'checkpoints/turk/model.turk.enc.src100.field100.drop0.3.max_ep100.batch32.lr0.003.clip_grad5.0.bin'
+Namespace(beam_size=10, max_decode_step=70, model_file='checkpoints/turk/model.turk.enc.src100.field100.drop0.3.max_ep100.batch32.lr0.003.clip_grad5.0.bin', test_file='data/turk/test.bin')
+Traceback (most recent call last):
+  File "test.py", line 85, in <module>
+    test(args)
+  File "test.py", line 45, in test
+    parser = ASNParser.load(args.model_file, ex_args=args)
+  File "/home/avi/Documents/torchASN-Transformer/models/ASN.py", line 323, in load
+    params = torch.load(model_path)
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/serialization.py", line 594, in load
+    with _open_file_like(f, 'rb') as opened_file:
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/serialization.py", line 230, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+  File "/home/avi/anaconda3/envs/torchASN/lib/python3.8/site-packages/torch/serialization.py", line 211, in __init__
+    super(_open_file, self).__init__(open(name, mode))
+FileNotFoundError: [Errno 2] No such file or directory: 'checkpoints/turk/model.turk.enc.src100.field100.drop0.3.max_ep100.batch32.lr0.003.clip_grad5.0.bin'
