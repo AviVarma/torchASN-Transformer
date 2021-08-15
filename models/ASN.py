@@ -8,7 +8,7 @@ from grammar.hypothesis import Hypothesis
 import numpy as np
 import os
 from common.config import update_args
-import nn_utils # Not used in original implementation.
+#import nn_utils # Not used in original implementation.
 
 # STEP 1: Replace the encoder with the transforemer encoder or make the LSTM encoder return a few more values for the Self attention.
 
@@ -421,21 +421,21 @@ class RNNEncoder(nn.Module):
         output = self.dropout(output)
         return (output, h_t) # we are returning a tuple here.
 
-def ScaledDotProdAttention(q, k, v, d_k, mask=None, dropout=None):
-
-    scores = torch.matmul(q, k.transpose(-2, -1)) /  math.sqrt(d_k)
-
-    if mask is not None:
-        mask = mask.unsqueeze(1)
-        scores = scores.masked_fill(mask == 0, -1e9)
-
-    scores = F.softmax(scores, dim=-1)
-
-    if dropout is not None:
-        scores = dropout(scores)
-
-    output = torch.matmul(scores, v)
-    return output
+# def ScaledDotProdAttention(q, k, v, d_k, mask=None, dropout=None):
+#
+#     scores = torch.matmul(q, k.transpose(-2, -1)) /  math.sqrt(d_k)
+#
+#     if mask is not None:
+#         mask = mask.unsqueeze(1)
+#         scores = scores.masked_fill(mask == 0, -1e9)
+#
+#     scores = F.softmax(scores, dim=-1)
+#
+#     if dropout is not None:
+#         scores = dropout(scores)
+#
+#     output = torch.matmul(scores, v)
+#     return output
 
 class LuongDotProdAttention(nn.Module):
     def __init__(self, hidden_size, context_size=None):
