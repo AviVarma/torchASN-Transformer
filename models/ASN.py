@@ -107,13 +107,13 @@ class ASNParser(nn.Module):
         self.v_lstm = nn.LSTM(args.enc_hid_size, args.enc_hid_size)
 
         # Attention:
-        self.att_src_linear = nn.Linear(args.enc_hid_size, args.enc_hid_size, bias=False)
-        self.att_vec_linear = nn.Linear(args.hidden_size + args.hidden_size, args.att_vec_size, bias=False)
+        #self.att_src_linear = nn.Linear(args.enc_hid_size, args.enc_hid_size, bias=False)
+        #self.att_vec_linear = nn.Linear(args.hidden_size + args.hidden_size, args.att_vec_size, bias=False)
 
         # params: h_t, src_encoding is the encoder hidden status (2* because bi-directional), vectors for computing attention scores
-        self.attn = nn_utils.dot_prod_attention(self.encoder[1], 2 * args.enc_hid_size, self.src_encodings_att_linear, mask=None)
+        #self.attn = nn_utils.dot_prod_attention(self.encoder[1], 2 * args.enc_hid_size, self.src_encodings_att_linear, mask=None)
 
-        #self.attn = LuongAttention(args.enc_hid_size, 2 * args.enc_hid_size) #HERE
+        self.attn = LuongDotProdAttention(args.enc_hid_size, 2 * args.enc_hid_size) #HERE
         self.dropout = nn.Dropout(args.dropout)
 
     def score(self, examples):
@@ -144,10 +144,10 @@ class ASNParser(nn.Module):
     def _score_node(self, node_type, v_state, action_node, context_vecs, context_masks):
         v_output = self.dropout(v_state[0])
 
-        contexts, alpha = nn_utils.dot_prod_attention(v_output.unsqueeze(0), context_vecs, )
-        att_t = torch.tanh(self.att_vec_linear(torch.cat([h_t, ctx_t], 1)))
-        att_t = self.dropout(att_t) # This might not work actually.                     HERE YOU WILL FIND THE ATTEMPETD IMPLEMENTATION OF DOT-PRODUCT ATTENTION....
-        #contexts = self.attn(v_output.unsqueeze(0), context_vecs).squeeze(0) #HERE context_vecs is needed for dot product
+        #contexts, alpha = nn_utils.dot_prod_attention(v_output.unsqueeze(0), context_vecs, )
+        #att_t = torch.tanh(self.att_vec_linear(torch.cat([h_t, ctx_t], 1)))
+        #att_t = self.dropout(att_t) # This might not work actually.                     HERE YOU WILL FIND THE ATTEMPETD IMPLEMENTATION OF DOT-PRODUCT ATTENTION....
+        contexts = self.attn(v_output.unsqueeze(0), context_vecs).squeeze(0) #HERE context_vecs is needed for dot product
 
         if node_type.is_primitive_type():
             module = self.prim_type_dict[node_type.name]
@@ -437,9 +437,48 @@ def ScaledDotProdAttention(q, k, v, d_k, mask=None, dropout=None):
     output = torch.matmul(scores, v)
     return output
 
-# Luong Location-Base Attention? since this implementation uses softmax?
-# There may be a way to manipulate this to work as the dot product attention
-# from there I might be able to re-factor it as mult-head attention?
+class LuongDotProdAttention(nn.Module):
+    def __init__(self, hidden_size, context_size=None):
+        super(LuongDotProdAttention, self).__init__()
+        self.hidden_size = hidden_size
+        self.context_size = hidden_size if context_size is None else context_size
+
+        # For the dot scoring method, no weights or linear layers are involved.
+
+        #self.attn = torch.nn.Linear(self.context_size, self.hidden_size)
+        #self.init_weight()
+
+    def init_weight(self):
+        nn.init.xavier_uniform_(self.attn.weight, gain=1)
+        nn.init.constant_(self.attn.bias, 0)
+
+    """
+    param query: batch * q * hidden
+    param context: c * batch * hidden
+    return softmax normalized probability scores: batch * len * q * c
+    """
+    def forward(self, query, context, inf_mask=None, requires_weight=False):
+        query = query.transpose(0, 1)
+        context = context.transpose(0, 1)
+
+        e = self.attn(context)
+        # e: B * Q * C
+        e = torch.matmul(query, e.transpose(1, 2))
+        if inf_mask is not None:
+            e = e + inf_mask.unsqueeze(1)
+
+        # dim w: B * Q * C, context: B * C * H, wanted B * Q * H
+        w = F.softmax(e, dim=2)
+        c = torch.matmul(w, context)
+        # # Return the softmax normalized probability scores (with added dimension
+        if requires_weight:
+            return c.transpose(0, 1), w
+        return c.transpose(0, 1)
+
+# Luong general Attention.
+# To implement dot attention, you might need to do $$dot_prod(h_t, W h_s)
+# when h_s is of (2 * hidden_size).
+# [reducing h_s so they have the same size and then you can do dot production].
 class LuongAttention(nn.Module):
 
     def __init__(self, hidden_size, context_size=None):
